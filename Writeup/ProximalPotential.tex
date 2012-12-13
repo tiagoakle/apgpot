@@ -1,7 +1,16 @@
-\documentclass{article}
-\usepackage{amsmath}
-\newcommand{\px}{\operatorname{prox}}
-\newcommand{\xp}{x^+}
+\documentclass[smallextended]{svjour3}       % onecolumn (second format)
+
+\smartqed  % flush right qed marks, e.g. at end of proof
+
+\usepackage{graphicx,bbm,algorithmic,algorithm} 
+\usepackage{amsmath,amstext,amssymb,amsfonts,amscd}
+
+\spnewtheorem{defn}{Definition}{\bf}{\rm} 
+\newcounter{rulenum} 
+\newcounter{sent} 
+\newcounter{tempcnt} 
+
+\include{macros}
 \title{Notes on Accelerated Proximal Gradient Algorithms for Potential-reduction}
 %\title{Notes on Accelerated Proximal Gradient Algorithms for Potential-reduction}
 \author{
@@ -26,22 +35,124 @@
 \begin{document}
 \maketitle
 
-Let $f:\Re^n\to(-\infty,\infty]$ be a convex, positive differentiable function with Lipschitz continuous gradient with constant $L$.
-Denote by $\psi$ the potential reduction function defined by $\psi = \rho \log{f} - \sum_{i\in I} \log(x)$, 
-where $I\subseteq [n]$ is an index set.  
+Let $f:\Re^n\to(-\infty,\infty]$ be a proper convex differentiable function
+with Lipschitz continuous gradient of constant $L$. Furthermore let
+\[0 < f\] except maybe for some set $X^{\star}$ where $f(x^\star) = 0$.
 
-The proximal gradient algorithm aplied to the potential function $\psi = g + h = \rho \log f+g$ can be 
-re interpreted as an algoritm which resembles the proximal gradient algoritm applied to $f + \mu h$ but where
-$\mu$ changes at every iteration. To explain this observation lets define some notation.
+Given a convex function $h$ its $\prx$ operator is the mapping defined by
+\[
+\prx_{h}(y) = \arg \min_u\left\{h(u) + \frac{1}{2}\n{y-u}\right\}.
+\]
 
-Denote by 
-\begin{equation}
-  \prx_\psi(x) = \arg \min_u \left\{  \psi - \|x-u\|^2 \right\}
-  \label{def:proc}
-\end{equation} the proximal potential operator of $\psi$. Observe that the 
-update defined by 
-\begin{equation}
-  \xp = \px_{th}{x - t\grad g},
-\end{equation}
-can be reinterpreted as the minimization of the model 
+The potential function $\psi$ is defined by
+\[
+\psi := \rho \log{f} - \sum_{i\in I}\log{x},
+\]
+where $I\subseteq [n]$ is an index set and $\rho$ is a scalar.
+
+Denote by
+$g = \rho \log{f}$ and by $h = -\sum_{i\in I} \log{x}$. 
+With this notation $\phi = g+h$.
+
+The potential proximal gradient algorithm is given by the repetitive application
+of the $\prx$ operator for the convex function $t_kh$ where $t_k$ is a
+positive step size.
+
+We state the algoithm formally here.
+
+\begin{algorithm}{Potential Reduction Proximal Gradient}
+  \caption{Proximal Gradient}
+  \begin{algorithmic}
+  \STATE $k \gets 0, x \gets x_0, t_k \gets t_0$
+
+  \WHILE{$f(x_k)- f^* > \epsilon$}
+    \STATE $x_{k+1} = \prx_{t_kh}{x_k - t_k \nabla g(x_k)}$
+  \ENDWHILE
+  \end{algorithmic}
+  \label{alg:ppg}
+\end{algorithm}
+
+
+Denote by $\ell(x;y)$ the local model of $\psi$ at $y$ given by
+\[
+\ell(x;y) = g(y) + \nabla g(y)^T(x-y) +  h(x),
+\]
+and denote by $G_t(x) = \frac{1}{t}(\xp - x)$. 
+The algorithm update is given by $\xp = x-tG_t(x)$.
+
+\begin{clm}
+The proximal gradient update is 
+\[
+    \xp = \arg \min_u\left\{ \ell(u;x) + \frac{1}{2t}\n{x-u} \right\}.
+\] 
+\end{clm}
+
+\begin{prf}
+  Observe that the argument of the minimization achieves its minimum at a 
+  point where $x_I>0$. Therefore $h$ is differentiable at the minimizer.
+  Using the first order optimality conditions we can conclude that
+  \[
+  \nabla g(\xp) + \frac{1}{t}\left( \xp - y \right) + \nabla h(\xp)= 0.
+  \]
+  Therefore $\xp$ also satisfies the optimality conditions of the problem 
+  \[
+  \xp = \arg \min_u \left\{ h(u) + \frac{1}{t}\n{u - x + t\nabla g}^2 \right\} 
+      = \arg \min_u\left\{ th(u) + \n{u - x + t\nabla g}^2 \right\} 
+      = \prx_{th}\left\{ x - t\nabla g \right\}.
+  \] 
+\end{prf}
+
+Observe that the gradients of $f$ and $g$ are related by $\nabla g(x) = \frac{\rho}{f(x)}\nabla f(x)$.
+Therefore we can re write the proximal algorithm in terms of steps allong the vector
+$\nabla f$ rather than $\nabla g$. 
+
+More formally: define the algorithm
+\begin{algorithm}{Proximal gradient}
+  \caption{Proximal Gradient}
+  \begin{algorithmic}
+  \STATE $k \gets 0, x \gets x_0, r_k \gets t_0$
+
+  \WHILE{$f(x_k)- f^* > \epsilon$}
+    \STATE $x_{k+1} = \prx_{r_kf(x_k)/\rho h}{x_k - r_k \nabla f(x_k)}$
+  \ENDWHILE
+  \end{algorithmic}
+  \label{alg:ppf}
+\end{algorithm}
+
+In particular 
+\begin{clm}
+if algorithm \eqref{alg:ppg} is executed with the sequence of 
+step sizes $\left\{ t_k \right\}$ then algorithm \eqref{alg:ppf} with 
+the sequence of step sizes $\left\{ r_k = t_k \frac{\rho}{f(x_k)}\right\}$ will generate the same iterates.
+
+\end{clm}
+\begin{prf}
+ Observe that 
+ \begin{align*}
+   \xp = \prx_{t_kh}\left\{x_k - t_k \nabla g(x_k)\right\} & = \arg \min_u \left\{ t_kh(u) + \frac{1}{2}\n{x_k - t_k \nabla g(x_k)-u}^2 \right\} \\
+   & = \arg \min_u \left\{ r_k\frac{f(x_k)}{\rho}h(u) + \frac{1}{2}\n{x_k - r_k\frac{f(x)}{\rho} \nabla g(x_k)-u}^2 \right\} \\
+   & = \arg \min_u \left\{ r_k\frac{f(x_k)}{\rho}h(u) + \frac{1}{2}\n{x_k - r_k\nabla f(x_k)-u}^2 \right\} \\
+   & = \prx_{\frac{f(x_k)}{\rho}h}\left\{x_k - r_k\nabla f(x_k)\right\}
+ \end{align*} 
+ \end{prf} 
+
+ Let me venture an interpretation of the proximal gradient potential reduction algorithm:
+ If we denote by $\mu = \frac{f(x)}{\rho}$ then $\mu h(x)$ is amenable to a barrier function. 
+ The steps $\hat x = x - r_k\nabla f$ are descent steps on the objective and $\xp = \prx_{\mu h}{\hat x}$ act
+ like centering steps.
+
+
+ \section{Strategies for proofs}
+ However, the important observation is that if $\mu$ is {\em fixed} then the
+ objective is convex, and the algorithm becomes simply the proximal potential
+ algorithm! Imagine we pick $\mu$ like $\frac{f^*+\epsilon}{\rho}$.  Then this
+ algorithm achieves the $\frac{1}{k}$ convergence and the accelerated version
+ achieves the $\frac{1}{k^2}$ rate !
+
+ For both the accelerated and regular proximal gradient methods we can use the
+ regular proof due to P.Tseng to show that if we fix $\mu$ then the methods
+ converge like $\frac{1}{k}$ or $\frac{1}{k^2}$.  Then we have to show that the
+ methods that change $\mu$ at every iterate do at least as well as those that
+ dont and we will be done.
+
 \end{document}

@@ -42,7 +42,7 @@ NMmul  = 0;
 NMtmul = 0;
 
 % set flags:
-R.ef     = -9;
+R.ef     = -9; %exit flag
 R.status = 'maxit';
 
 % init:
@@ -71,7 +71,7 @@ end
 
 % first residuals:
 NMmul  = NMmul + 1;
-Mzy    = M*zy;
+Mzy    = M*zy; 
 Mzx    = Mzy;
 resy   = Mzy - q;
 resx   = resy;
