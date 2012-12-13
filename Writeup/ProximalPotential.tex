@@ -1,0 +1,47 @@
+\documentclass{article}
+\usepackage{amsmath}
+\newcommand{\px}{\operatorname{prox}}
+\newcommand{\xp}{x^+}
+\title{Notes on Accelerated Proximal Gradient Algorithms for Potential-reduction}
+%\title{Notes on Accelerated Proximal Gradient Algorithms for Potential-reduction}
+\author{
+   %Anders Skajaa
+   %\and Yinyi Ye 
+   %\and Santiago Akle
+   Santiago Akle.
+}
+
+%\institute{A. Skajaa \at
+%           Dtu
+%        \\ \email{andsk@imm.dtu.dk}
+%           \and
+%           Y. Ye \at
+%           Dept of Management Science and Engineering, Stanford University, Stanford, CA 94305
+%        \\ \email{yinyu-ye@stanford.edu}
+%           \and
+%           S. Akle \at
+%           ICME, Stanford University, Stanford, CA 94305
+%        \\ \email{akle@stanford.edu}
+%
+\begin{document}
+\maketitle
+
+Let $f:\Re^n\to(-\infty,\infty]$ be a convex, positive differentiable function with Lipschitz continuous gradient with constant $L$.
+Denote by $\psi$ the potential reduction function defined by $\psi = \rho \log{f} - \sum_{i\in I} \log(x)$, 
+where $I\subseteq [n]$ is an index set.  
+
+The proximal gradient algorithm aplied to the potential function $\psi = g + h = \rho \log f+g$ can be 
+re interpreted as an algoritm which resembles the proximal gradient algoritm applied to $f + \mu h$ but where
+$\mu$ changes at every iteration. To explain this observation lets define some notation.
+
+Denote by 
+\begin{equation}
+  \prx_\psi(x) = \arg \min_u \left\{  \psi - \|x-u\|^2 \right\}
+  \label{def:proc}
+\end{equation} the proximal potential operator of $\psi$. Observe that the 
+update defined by 
+\begin{equation}
+  \xp = \px_{th}{x - t\grad g},
+\end{equation}
+can be reinterpreted as the minimization of the model 
+\end{document}

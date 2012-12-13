@@ -122,7 +122,8 @@ while go
     %----------------- 
     %Form the gradient
     %-----------------
-    grad = rho/f*[A'*p+g*c;A*d-g*b;d] - [1./x;zeros(m,1);1./z];
+    grad = rho/f*[A'*p+g*c;A*d-g*b;d];
+
     
     %Calculate the local decrease
     dec  = grad'*[x;y;z];

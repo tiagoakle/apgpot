@@ -1,0 +1,27 @@
+\newcommand{\pmat}[1]{\begin{pmatrix}#1\end{pmatrix}}
+\newcommand{\minres}{ MINRES }
+\newcommand{\matlab}{ MATLAB }
+\newcommand{\n}[1]{\left\| #1 \right\|}
+\newcommand{\eps}{\epsilon}
+\newcommand{\s}[1]{\operatorname{Span}\left( #1 \right)}
+% Commands for problem definition
+\newcommand{\maximize}{\operatorname{maximize}\ }
+\newcommand{\minimize}{\operatorname{minimize}\ }
+\newcommand{\st}{\text{ subject to }}
+% Hand made theorem
+\newcounter{thm}[section]
+\renewcommand{\thethm}{\thesection.\arabic{thm}}
+\def\claim#1{\par\medskip\noindent\refstepcounter{thm}\hbox{\bf \arabic{chapter}.\arabic{section}.\arabic{thm}. #1.}
+\it\ %\ignorespaces
+}
+\def\endclaim{
+\par\medskip}
+\newenvironment{thm}{\claim}{\endclaim}
+
+%Linear algebra notation
+\newcommand{\w}{\ensuremath{\mathcal{W}}\ }
+\newcommand{\vc}{\ensuremath{\mathcal{V}}\ }
+
+%Shortcuts 
+\newcommand{\p}[1]{\ensuremath{\left\( #1 \right\)}}
+\newcommand{\tendsto}{\rightarrow}

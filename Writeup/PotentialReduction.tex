@@ -1,0 +1,240 @@
+\documentclass{article}
+\usepackage{amsmath}
+\include{macros}
+\title{Potential reduction functions}
+\author{Santiago Akle}
+\begin{document}
+\maketitle
+%\section{Background}
+%Derived from a reinterpretation of Karmakar\'s algorithm.
+\section{Definitions}
+Assume that a linear program (LP) is given in standard form
+\begin{align*}
+  \minimize c^Tx\\
+  \st Ax = b,\\
+  0 \leq x.
+  \label{eq:pprimal}
+  \tag{Pp}
+\end{align*}
+Its dual will be given by \marginpar{\em lagrange dual?} 
+\begin{align*}
+  \maximize b^Ty\\
+  \st A^Ty + z = c,\\
+  0 \leq z.
+  \label{eq:pdual}
+  \tag{Pd}
+\end{align*}
+
+\subsection{Properties of the solution}
+If both \eqref{eq:pprimal} and \eqref{eq:pdual} are
+feasible, then a sufficient and necessary condition 
+for a triplet $(x^\star,y^\star,z^\star)$ to be a solution of \eqref{eq:pprimal}
+is the satisfaction of the KKT conditions:
+\begin{eqnarray*} 
+  Ax = b,\\
+  A^Ty + z = c,\\
+  0\leq x, \\
+  0\leq z, \\
+  x_iz_i = 0.
+  \label{eq:kkt}
+\end{eqnarray*}
+
+\subsection{Potential reduction functions}
+Denote by $\phi$ the function
+\begin{equation*}
+  \phi_\rho(x,z) = \rho\log(x^Tz) -\sum_j\log{x_jz_j},
+  \label{eq:phi}
+\end{equation*}
+and by $\psi$ the function
+\begin{equation*}
+  \psi_\rho(x,y,z) = \frac{\rho}{2}\log\left(\n{Ax-b}^2+\n{A^Ty+z-c}^2 + (c^Tx-b^Ty)^2\right) -\sum_j\log{x_jz_j}
+  \label{eq:psi}
+\end{equation*}
+and, for reasons that will become apparent, impose the condition $\rho >n$.
+\subsubsection{Some observations}
+\begin{itemize}
+  \item If $\rho > n$ then $\phi$ and $\psi$ have no stationary points.
+  \item The pair $x,z$ that minimizes $\phi$ subject to $x^Tz = n \mu$ is the point such that $x_iz_i = \mu$.
+  \item The triplet that minimizes $\psi$ subject to $x^Tz = n\mu$ to $Ax=b$ and $A^Ty + z - c$ is the point such that $x_jz_j = \mu$. \marginpar{\em verify}
+\end{itemize}
+
+\subsubsection{Derivatives}
+Though the Hessian of $\psi$ seems to be mildly complicated the gradient has a
+relatively simple expression. 
+Denote the sum of the square infeasibilities by 
+\[R = \n{Ax-b}^2+\n{A^Ty+z-c}^2 + (c^Tx-b^Ty)^2,\]
+now the gradient takes the form 
+\[
+\nabla \psi = \begin{cases}
+              \frac{\rho}{R} \left(A^T(Ax-b) + c(c^Tx-b^Ty)\right) - X^{-1}e\\
+              \frac{\rho}{R} \left(A(A^Ty+z-c)-b(c^Tx-b^Ty)\right)\\
+              \frac{\rho}{R} \left(A^Ty+z-c\right)                              - Z^{-1}e.
+              \end{cases}
+\]
+
+\subsubsection{Inexistence of stationary points}
+A simple argument to show that $\psi$ has no stationary points, begins 
+by prooving that for $\rho>n$ $\phi$ has no stationary points.
+To do this just 
+
+\subsubsection{Solving LPs with potential reduction functions}
+    It is easy to see that if $x_k,y_k,z_k$ is a sequence of bounded iterates and
+    $x^\star,y^\star,z^\star$ is a limit point such that $\psi(x_k,y_k,z_k) \rightarrow - \infty$
+    as $(x_k,y_k,z_k) \rightarrow (x^\star,y^\star,z^\star)$, then the limit point is a solution
+    of \eqref{eq:pprimal}.
+
+    From the boundedness of the iterates we can conclude that the second term is bounded from below,
+    therefore a reduction of $\psi$ or $\phi$ to minus infinity implies that the 
+    first term must tend to minus infinity, and this can only happen if its argument tends to zero.
+
+\subsubsection{Relation to the central path}
+    If both the primal and dual are stictly feasible the central path exists. 
+    Denote by $x(\mu),y(\mu),z(\mu)$ the point in the central path parametrized by $\mu$ and 
+    observe that 
+    \[
+    \psi(x(\mu),y(\mu),z(\mu)) = \phi(x(\mu),y(\mu),x(\mu)) = \rho\log(n\mu) - n\log\mu = \rho\log n + (\rho-n)\log \mu. 
+    \]
+    Clearly if $\rho >n$ as $\mu\tendsto0$ $\psi \tendsto-\infty$.
+    In other words if we follow the central path to the solution the functions tend 
+    to $-\infty$.
+
+\section{Simplified Homogeneous self dual formulation} 
+
+The homogeneous self dual formulation of \cite{SimplifiedHSDYe}, embeds the LO into a larger one (HLO).
+This LO is its own dual and is allways feasible. A consequence of this is that there is allways a solution of 
+this larger LO. 
+\begin{align}
+  \min 0 \\
+  \st \\
+  Ax - \tau b = 0\\
+  -A^Ty +\tau c \geq 0\\
+  c^Tx-b^Ty \geq 0\\
+  x\geq 0\\
+  \tau \geq 0
+  \tag{HSO}
+  \label{eq:hsd}
+\end{align}
+
+Denote by $z$ the slacks for the second equation and by $\kappa$ the slack scalar for the dual gap.
+The problem is feasible since $0$ is a feasible solution. Furthermore if a solution is strictly complementary
+we have that $\tau + \kappa >0$ and $\tau \kappa = 0$. If in this case $\kappa >0$ then the original lp
+is infeasible, if however $\tau>0$ the solution is easily calculated.
+
+\section{Potential reduction for the HSD}
+\begin{equation*}
+  \psi_H(x,y,z) = \frac{\rho}{2}\log\left(\n{Ax-\tau b}^2+\n{A^Ty+z-\tau c}^2 + (c^Tx-b^Ty +\kappa)^2\right) -\sum_j\log{x_jz_j} - \log\left( \tau \kappa \right)
+  \label{eq:psiH}
+\end{equation*}
+
+\subsection{Derivatives}
+Assume the variables are ordered as $x,\tau,y,z,\kappa$ then the gradient takes the form:
+\[
+\nabla \psi_H = \begin{cases}
+              \frac{2\rho}{R} \left(A^T(Ax-\tau b) + c(c^Tx-b^Ty + \kappa)\right) - X^{-1}e\\
+              \frac{2\rho}{R} \left( b^T(\tau b-Ax)+c^T(\tau c - z- A^Ty) \right)  - \tau^{-1}\\
+              \frac{2\rho}{R} \left(A(A^Ty+z-\tau c)-b(c^Tx-b^Ty + \kappa)\right)\\
+              \frac{2\rho}{R} \left(A^Ty+z-\tau c\right)                              - Z^{-1}e\\
+              \frac{2\rho}{R} \left(c^Tx-b^Ty+\kappa \right)  - \kappa^{-1}.
+              \end{cases}
+\]
+
+Denote by 
+\begin{align}
+  p = Ax-\tau b,\\
+  d = A^Ty + z - \tau c,\\
+  g = c^Tx-b^Ty+\kappa.
+  \label{eq:defres}
+\end{align}
+Then the gradient can be written as:
+\[
+\nabla \psi_H = \begin{cases}
+              \frac{2\rho}{R} \left(A^Tp + gc\right) - X^{-1}e\\
+              \frac{2\rho}{R} \left( -b^Tp-c^Td \right)  - \tau^{-1}\\
+              \frac{2\rho}{R} \left(Ad-gb\right)\\
+              \frac{2\rho}{R} d                               - Z^{-1}e\\
+              \frac{2\rho}{R} g  - \kappa^{-1}.
+              \end{cases}
+\]
+
+
+
+\section{Convergence rates}
+
+\section{Achieving sufficient descent}
+Denote by 
+\[
+E = \pmat{ & A^T & I \\
+         A &     &   \\
+         c^T&-b^T}
+\] 
+the $m+n+1$ by $2n+m$ system, by $s_k = (x_k,y_k,z_k)$ the $k$th iterate,
+by
+\[
+r = -\pmat{d_r,p_r,g_r}
+\] the residual and by 
+$\iota(s_k) = \n{E s_k-r}$, the norm of the infeasibility.
+
+If at iteration $k$ the search direction is chosen so that $E\Delta s = -r$, then
+a damped Newton step of the form $s_{k+1} = s_k + \alpha \Delta s$ for $\alpha <1$ 
+will achieve a reduction in the magnitude of the residuals of the form 
+\[
+(1-\alpha)(Es_k-r) = (Es_{k+1}-r),
+\]
+which in turn implies that $\iota(s_{k+1})/\iota(s_k) = 1-\alpha$. 
+
+Observe that 
+\[ \psi(s_{k+1}) - \psi(s_k) =
+\rho \log\left( \iota^2(s_{k+1})/\iota^2(s_k) \right) 
+- \sum\left( \log\left( 1-\frac{\Delta x_j}{x_j} \right) 
++ \log\left(1-\frac{\Delta z_j}{z_j} \right) \right)
+\]
+which implies that 
+\[
+\psi(s_{k+1}) - \psi(s_k) = 
+\rho \log\left( (1-\alpha)^2 \right) 
+- \sum_j\left( \log\left( 1-\frac{\alpha \Delta x_j}{x_j} \right) 
++ \log\left(1-\frac{\alpha \Delta z_j}{z_j} \right) \right).
+\]
+Assume that the step length $\alpha$ is chosen such that $\n{\alpha X^{-1}\Delta x}_\infty < \tau < 1$, 
+and $\alpha < \tau$.
+
+Using the bound \cite{Kojima}
+\[
+\sum_j \log(1-x_j) \geq -e^Tx-\frac{\n{x}^2}{2(1-\tau)}
+\]
+which is valid for $\n{x}_\infty\leq1$,  \marginpar{\em Cite Mizuno} 
+we can bound the difference by 
+\[ 
+\Delta \psi = \rho \log\left( 1-\alpha \right)^2 + \alpha e^T(X^{-1}\Delta x
++ Z^{-1}\Delta z) + \alpha^2\left( \frac{\n{Z^{-1}\Delta z}_2^2+\n{X^{-1}\Delta
+x}_2^2}{2(1-\tau)} \right).
+\]
+
+\begin{eqnarray*}
+  \Delta \psi \leq& \rho \log \left( (1-\alpha)^2 \right) + \alpha e^T(X^{-1}\Delta x + Z^{-1}\Delta z) + \frac{\alpha^2}{2(1-\tau)} 
+  \pmat{\Delta x & \Delta y} \pmat{X^{-2} & \\ & Z^{-2}}\pmat{\Delta x \\ \Delta z} \\
+  \Delta \psi \leq& \rho \log \left( (1-\alpha)^2 \right) + Q(\Delta x, \Delta z).
+\end{eqnarray*}
+
+\section{An Infeasible Potential Reduction Function?}
+
+\[
+\psi(x,y,z) = \rho \log\left\{ \frac{\n{Ax-b}^2 + \n{A^Ty+z-c}^2 + (c^Tx-b^Ty)^2}{x^Tz} \right\} - \sum_j\log{x_jz_j}
+\]
+
+Observe that if $s = (x,y,z)$ is in the central path, then:
+\[
+\psi(s) = \rho \log\left\{ (x^Tz)^2/x^Tz \right\} - \sum_j \log{x_jz_j} = \phi(s)
+\]
+and will tend to $-\infty$ as $\mu$ tends to zero.
+
+Assume that the solution set is bounded, and assume that $s_j$ is a bouned
+sequence with an accumulation point $s^\star$ such that for some sub sequence
+$s_{j_k}$ we have $\psi(s_{j_k})\rightarrow -\infty $ as $k\rightarrow \infty$.
+
+Then from the boundedness of the sequence we have that the term $\sum\log{x_jz_j}$ is 
+bounded bellow. Therefore convergence of $\psi{s_k}$ to $-infty$ implies
+that the argument of the first term tends to zero.
+
+This in turn implies that the numerator tends to zero proving the convergence of $s_k$ to a solution.
+\end{document}
