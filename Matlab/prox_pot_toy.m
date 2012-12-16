@@ -1,4 +1,5 @@
-clear all
+%clear all
+%clc
 format compact
 
 %December 5 2012
@@ -11,22 +12,24 @@ format compact
 %It solves LPs in standard form
 % min c'x s.t. Ax=b and 0 <= x
 
-%Problem definition
-prob_name = 'Random';
-seed = 0;
-randn('seed',seed);
+%If there is a problem in the workspace then dont generate a new one
+if(isempty(A)||isempty(b)||isempty(c))
+    %Problem definition
+    prob_name = 'Random';
+    seed = 0;
+    randn('seed',seed);
+    rand('seed',seed);
+    m = 5;
+    n = 15;
+    A = randn(m,n);
 
-m = 200;
-n = 1000;
-A = randn(m,n);
+    x0    = rand(n,1);
+    b     = A*x0; %Find a rhs which makes the problem feasible
 
-x0    = rand(n,1);
-b     = A*x0; %Find a rhs which makes the problem feasible
-
-y0    = randn(m,1);
-z0    = rand(n,1);
-c     = A'*y0 + z0; %Generate a dual feasible
-
+    y0    = randn(m,1);
+    z0    = rand(n,1);
+    c     = A'*y0 + z0; %Generate a dual feasible
+end
 %Problem parameters
 m = size(A,1);
 n = size(A,2);
@@ -52,24 +55,28 @@ fprintf('Loaded problem %s, m:%i, n:%i\n',P.name,m,n);
 %}
 
 x0 = ones(n,1);
-y0 = zeros(m,1);
+y0 = ones(m,1);
 z0 = ones(n,1);
 
+%---------------------------------------
+%Define the parameters
+%---------------------------------------
+pars.accel     = 1;  %Use Nesterov acceleration 
 %Tolerances 
-epsi      = 1e-10;
-max_iter  = 3000;
+pars.epsi      = 1e-10;
+pars.max_iter  = 10000;
+%backtracking
+pars.max_bkt   = 100;
+pars.beta_bkt  = 0.5;
+pars.t0        = 1;  %Inital step size
+pars.t0m       = 1/0.9; %Extension of the step size
 
-%Variables of the search direction
-x_d = zeros(n,1);
-y_d = zeros(m,1);
-z_d = zeros(n,1);
-
+%printing
+pars.itn_print = 500;
 rho = (n+sqrt(n)); %Feasibility weight in the potential function
 
-
 itn  = 1; %iteration counter
-go = true; %Iteration Flag
-
+k    = 0; %Backtraking interation couter
 %Calculate the initial centrality measure
 mu   = x0'*z0;
 mu   = mu/n;
@@ -79,27 +86,30 @@ p  = A*x0-b;
 d  = A'*y0 + z0 - c;
 g  = c'*x0-b'*y0;
 mu = (x0'*z0)/(n);  
+%Measure the infeasibilities
+nP0 = norm(p);
+nD0 = norm(d);
+nG0 = abs(g);
+
+nP  = nP0;
+nD  = nD0;
+nG  = nG0;
+
+res0   = norm([p;d;g]);
 %Calculate the infeasibility 
-f = norm(p)^2+norm(d)^2+g^2;    
-merit = rho*log(norm(p)^2 + norm(d)^2 + g^2) - sum(log(x0)) - sum(log(z0));
-%----------------------
-%Tuning variables
-%----------------------
-stepeps = 1e-5;
-lambda  = 1;
+f       = nP^2+nD^2+nG^2;    
 
 %Log the step
-log_x   = {x0};
-log_y   = {y0};
-log_z   = {z0};
-log_mu  = {mu};
-log_p_r = {p};
-log_d_r = {d};
-log_g_r = {g};
-log_merit = {merit};
-log_f   = {f};
-log_step= {};
-fprintf('%s, %s , %s,  %s,  %s,   %s,   %s, %s, %s,%s,%s,%s \n','Itn','itn_ass','itn_corr','n_p_r','n_d_r','mu','step x','step z','sigma','d_x','d_y','d_z');
+log_mu    = zeros(pars.max_iter,1);
+log_p_r   = zeros(pars.max_iter,1);
+log_d_r   = zeros(pars.max_iter,1);
+log_g_r   = zeros(pars.max_iter,1);
+log_merit = zeros(pars.max_iter,1);
+log_f     = zeros(pars.max_iter,1);
+log_step  = zeros(pars.max_iter,1);
+log_infeas= zeros(pars.max_iter,1);
+log_rel_infeas= zeros(pars.max_iter,1);
+
 
 %Iteration
 
@@ -107,107 +117,162 @@ fprintf('%s, %s , %s,  %s,  %s,   %s,   %s, %s, %s,%s,%s,%s \n','Itn','itn_ass',
 x = x0;
 y = y0;
 z = z0;
+xp= x;
+yp= y;
+zp= z;
+
+f0 = f;
+      
+%XXX: the choice is arbitrary
+%First step size
+t  = 1;
+
+fprintf('================================ PROXPOT TOY ================================================================\n');
+fprintf('  ITE LSTP F(X)/F0  f(x)/f(0) PHI     Mu       NPR      NDR      NGR      ALPH     MinX     MinZ     Infeas   R_Infeas\n');
+fprintf('-------------------------------------------------------------------------------------------------------------\n');
 
 
-while go
+for itn = 1:pars.max_iter
 
-    %Form the hsd system 
-    % K = [[sparse(n,n),c,-A',-speye(n),sparse(n,1)];[-c',0,b',sparse(1,n),-1];[A,b,sparse(m,n+m+1)];[diag(sparse([z;k])),sparse(n+1,m),diag(sparse([x;t]))]];
-
-    %Define the RHS for the affine scaling problem
-    %RHS = [eta*d;eta*g;-eta*p;sigma*mu-x.*z;sigma*mu-t*k];
-    %x_sol = K\RHS; 
-    %clear RHS;
-   
-    %----------------- 
-    %Form the gradient
-    %-----------------
-    grad = rho/f*[A'*p+g*c;A*d-g*b;d];
-
+   %Exit condition:
+    if f < pars.epsi
+     fprintf('Success \n');
+     break;
+    end
     
-    %Calculate the local decrease
-    dec  = grad'*[x;y;z];
+    %----------------------------- 
+    %Evaluate the progress and log
+    %----------------------------- 
+    
+    relf = f/f0; %Relative reduction in objective f
+    merit = rho*log(nP^2 + nD^2 + nG^2) - sum(log(x)) - sum(log(z)); %Value of phi
+    res   = norm([p;d;g]); %Norm of the residual
+    relres= res/res0;      %Relative residual
+    %Calculate the centrality 
+    mu = x'*z/n;
+    rel_infeas = max([nP/nP0,nD/nD0,nG/nG0]); %Relative infeasibility/ to the original
+    infeas = max([nP,nD,nG]);
 
+    %Log the step
+    log_mu(itn)        = mu;
+    log_p_r(itn)       = nP;
+    log_d_r(itn)       = nD;
+    log_g_r(itn)       = nG;
+    log_merit(itn)     = merit;
+    log_f(itn)         = f;
+    log_step(itn)      = t;
+    log_infeas(itn)    = infeas;
+    log_rel_infeas(itn)= rel_infeas;
+
+
+   if mod(itn,pars.itn_print) == 0 || itn ==1
+            fprintf('%5.1i %3.1i %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e\n',...
+                     itn,k,relres,relf,merit,mu,nP/nP0,nD/nD0,nG/nG0,t,min(x),min(z),infeas,rel_infeas); 
+   end
+
+   
+    %---------------------- 
+    %Form the gradient of f
+    %----------------------
+    grad = 2*[A'*p+g*c;A*d-g*b;d];
+    
     %Save the present step    
     xs = x;
     ys = y;
     zs = z;
+    
+    %-----------------------------------
+    %Backtracking linesearch
+    %----------------------------------
 
-    %Calculate the step size
-    %XXX
-    alph = stepeps/(2*rho*lambda);
+    for k = 1:pars.max_bkt
+        %-------------------------------
+        %Take the gradient step
+        %-------------------------------
+        x  = xs - t*grad(1:n);
+        y  = ys - t*grad(n+1:n+m);
+        z  = zs - t*grad(n+m+1:2*n+m); 
 
-    %Very aggressive strategy -------------------------
+        %--------------------------------
+        %Proximal projection step on the 
+        % positively constrained variables
+        %-------------------------------
+        %XXX This is to win intuition for the proof
+        %eta = 4*t*1.e-10/rho; %OOPS this works too!
+        
+        eta = 4*t*f/rho;
+        x   = 0.5*(x+sqrt(x.^2+eta)); 
+        z   = 0.5*(z+sqrt(z.^2+eta));
+        
+        %Calculate the residuals
+        p = A*x-b;
+        d = A'*y+z-c;
+        g = (c'*x-b'*y);
 
-    %Find the largest afine step to the boundary
-   % max_alph_x = -[x]./[grad(1:n)];
-   % max_alph_x = min(max_alph_x(find(max_alph_x>0)));
-   % max_alph_z = -[z]./[grad(n+m+1:2*n+m)];
-   % max_alph_z = min(max_alph_z(find(max_alph_z>0)));
-   % max_alph   = min([max_alph_z,max_alph_x,1]);
- 
-   % %Calculate the step length
-   % alph_x = min(0.90*max_alph_x,1);
-   % alph_z = min(0.90*max_alph_z,1); 
-   % %Choose the minimum last feasible step
-   % alph   = min(alph_x,alph_z);
-   % alph   = min(alph,1);
-  
+        %Calculate the infeasibility 
+        nP = norm(p);
+        nD = norm(d);
+        nG = abs(g);
 
-    %-------------------------------
-    %Take the gradient step
-    %-------------------------------
-    x  = x - alph*grad(1:n);
-    y  = y - alph*grad(n+1:n+m);
-    z  = z - alph*grad(n+m+1:2*n+m); 
+        %Calculate the proximal gradient
+        Gt  = 1/t*[xs-x;ys-y;zs-z];
+        Gtg = Gt'*grad; %local linear decrease
+        nGt = norm(Gt)^2;
+        fn  = nP^2+nD^2+g^2;  
+        
+        %Evaluate the backtracking inequality 
+        if fn < f - t*Gtg + t*0.5*nGt
+             break;
+        else %Backtracking step
+            t = t*pars.beta_bkt;
+        end
 
-    %--------------------------------
-    %Proximal projection step
-    %--------------------------------
-    x  = 0.5*(x+sqrt(x.^2+4*alph));
-    y  = 0.5*(y+sqrt(y.^2+4*alph));
-    z  = 0.5*(z+sqrt(z.^2+4*alph));
+    end % end of linesearch
 
-    %Calculate the residuals
-    p = A*x-b;
-    d = A'*y+z-c;
-    g = (c'*x-b'*y);
-    %Calculate the infeasibility 
-    f = norm(p)^2+norm(d)^2+g^2;  
+    f = fn;
 
-    pastmerit = merit;
-    merit = rho*log(norm(p)^2 + norm(d)^2 + g^2) - sum(log(x)) - sum(log(z));
-    %Calculate the centrality 
-    mu = x'*z/n;
+    %---------------------------------
+    %Nesterov/ P.Tseng Acceleration
+    %--------------------------------- 
+    if pars.accel > 0  %Acceleration step
+        theta   = (itn-1)/(itn+2); %Extrapolation coeficient
+        ex_dirx = [x-xp];
+        ex_diry = [y-yp];
+        ex_dirz = [z-zp];
+       
+        %Save x
+        xp      = x;
+        zp      = z;
+        yp      = y;
+        resp    = res;
+        %Extrapolate
+        x     = x + theta*ex_dirx;
+        y     = y + theta*ex_diry;
+        z     = z + theta*ex_dirz; 
+        %Update the residuals
+        %XXX:The expensive way
+        p = A*x-b;
+        d = A'*y+z-c;
+        g = (c'*x-b'*y);
 
-    %Log the step
-    log_x     = {log_x{:},x};
-    log_y     = {log_y{:},y};
-    log_z     = {log_z{:},z};
-    log_mu    = {log_mu{:},mu};
-    log_p_r   = {log_p_r{:},p};
-    log_d_r   = {log_d_r{:},d};
-    log_g_r   = {log_g_r{:},g};
-    log_merit = {log_merit{:},merit};
-    log_f     = {log_f{:},f};
-    log_step  = {log_step{:},alph};
-     
-   fprintf(' merit %d ,dec %d, ini-final %d, step %d, f %d , x (%d,%d), z(%d,%d) \n',merit,dec,merit-pastmerit,alph,f,min(x),max(x),min(z),max(z));
+        %Calculate the infeasibility 
+        nP = norm(p);
+        nD = norm(d);
+        nG = abs(g);
 
-  %Update mu
-  mu = (x'*z)/n;
-  if itn > max_iter 
-      go = false;
-  else
-      itn = itn +1;
-  end
-  if f < epsi
-    go = false;
-    fprintf('Success \n');
-  end
+        f  = nP^2+nD^2+g^2;  
+        
+    end
+
+
+   %Prepare the next loop
+   if(isfield(pars,'t0m')) %Extend the initial step size a little
+        t = t*pars.t0m;
+   end
+          
 
 end
 %remove the backslashes from the name
-prob_name(find(prob_name=='/'))='_';
+%prob_name(find(prob_name=='/'))='_';
 %save(prob_name,'k','log_d_r','log_p_r','log_mu','log_x','log_y','log_z','log_muaff','log_sigma');
 
