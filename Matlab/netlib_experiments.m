@@ -37,11 +37,7 @@ for problem_index = 1:problem_count
   %Run prox_pot_toy to compare
   prox_pot_toy
   results = {results(:);{prob_name,'1',m,n,itn,nP,nD,nG,mu,Exit_flag}};
-  figure
-  hold on;
-  plot(log10(log_f));
   prox_pot_toy_skew
   results = {results(:);{prob_name,'2',m,n,itn,nP,nD,nG,mu,Exit_flag}};
-  plot(log10(log_f),'r');
-  hold off;
+  save 
 end
