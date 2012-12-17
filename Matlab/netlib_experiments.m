@@ -30,7 +30,7 @@ for problem_index = 1:problem_count
 
   pars.rho = n+sqrt(n);
   pars.accel = 1;
-  pars.max_iter = min(m*n,3);
+  pars.max_iter = min(m*n,30000);
   pars.tolnorm = 2;
   pars.itn_print = 30000;
 
