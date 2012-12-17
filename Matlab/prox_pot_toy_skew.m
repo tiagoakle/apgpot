@@ -63,8 +63,7 @@ z0 = ones(n,1);
 %---------------------------------------
 pars.accel     = 1;  %Use Nesterov acceleration 
 %Tolerances 
-pars.epsi      = 1e-10;
-pars.max_iter  = 10000;
+pars.epsi      = 1e-5;
 %backtracking
 pars.max_bkt   = 100;
 pars.beta_bkt  = 0.5;
@@ -72,7 +71,7 @@ pars.t0        = 1;  %Inital step size
 pars.t0m       = 1/0.9; %Extension of the step size
 
 %printing
-pars.itn_print = 500;
+Exit_flag = 'max_iter';
 rho = (n+sqrt(n)); %Feasibility weight in the potential function
 
 itn  = 1; %iteration counter
@@ -136,8 +135,9 @@ fprintf('-----------------------------------------------------------------------
 for itn = 1:pars.max_iter
 
    %Exit condition:
-    if f < pars.epsi
+    if nP < pars.epsi && nD < pars.epsi && mu < pars.epsi
      fprintf('Success \n');
+     exit_flag = 'Success';
      break;
     end
     

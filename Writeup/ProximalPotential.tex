@@ -132,7 +132,7 @@ the sequence of step sizes $\left\{ r_k = t_k \frac{\rho}{f(x_k)}\right\}$ will 
    \xp = \prx_{t_kh}\left\{x_k - t_k \nabla g(x_k)\right\} & = \arg \min_u \left\{ t_kh(u) + \frac{1}{2}\n{x_k - t_k \nabla g(x_k)-u}^2 \right\} \\
    & = \arg \min_u \left\{ r_k\frac{f(x_k)}{\rho}h(u) + \frac{1}{2}\n{x_k - r_k\frac{f(x)}{\rho} \nabla g(x_k)-u}^2 \right\} \\
    & = \arg \min_u \left\{ r_k\frac{f(x_k)}{\rho}h(u) + \frac{1}{2}\n{x_k - r_k\nabla f(x_k)-u}^2 \right\} \\
-   & = \prx_{\frac{f(x_k)}{\rho}h}\left\{x_k - r_k\nabla f(x_k)\right\}
+   & = \prx_{r_k\frac{f(x_k)}{\rho}h}\left\{x_k - r_k\nabla f(x_k)\right\}
  \end{align*} 
  \end{prf} 
 
@@ -154,5 +154,29 @@ the sequence of step sizes $\left\{ r_k = t_k \frac{\rho}{f(x_k)}\right\}$ will 
  converge like $\frac{1}{k}$ or $\frac{1}{k^2}$.  Then we have to show that the
  methods that change $\mu$ at every iterate do at least as well as those that
  dont and we will be done.
+
+ \section{Numerical experiments}
+ \subsection{Solving Linear Programs}
+ To use the potential reduction model for solving Linear Programs, 
+ we have several choices of objective function.
+ Let 
+ \[
+ f_1(x,y,z) = \n{Ax-b}^2 + \n{A^Ty+z-c}^2 + (c^Tx-b^Ty)^2,
+ \]
+ let 
+  \[
+ f_2(x,y,z) = \n{Ax-b}^2 + \n{A^Ty+z-c}^2 + x^Tz, 
+ \]
+ and let
+  \[
+ f_3(x,\tau,y,z,\kappa) = \n{Ax-\tau b}^2 + \n{A^Ty+z-\tau c}^2 + (c^Tx-b^Ty+\kappa)^2.
+ \]
+
+ The present algorithm does not yet work for the homogeneous self dual version $f_3$, this 
+ has to be explored further.
+
+ Some initial experiments with $f_1$, and $f_2$ suggest that they behave slightly differently.
+  The following are set of experiments solving the subset of the \netlib problems which 
+  are identified as problems in standard form.
 
 \end{document}

@@ -8,8 +8,8 @@ addpath '..' %Make sure that the path of prox_pot_toy is available
 seed = 0;
 randn('seed',seed);
 rand('seed',seed);
-m = 5;
-n = 15;
+m = 500;
+n = 1500;
 A = randn(m,n);
 
 x0    = rand(n,1);
@@ -27,8 +27,12 @@ pars.tolnorm = 2;
 
 %Run prox_pot_toy to compare
 prox_pot_toy
+figure;
+hold on;
+plot(log10(log_f));
 prox_pot_toy_skew
-
+plot(log10(log_f),'r');
+hold off;
 % run again, but with different parameters:
 %pars.echo    = 0;     %no printing
 %pars.beta    = 0.9;   %different step-size reduction
