@@ -84,6 +84,7 @@ mu   = mu/n;
 p  = A*x0-b;
 d  = A'*y0 + z0 - c;
 g  = sqrt(x.*z);
+o  = x0'*c;
 
 mu = (x0'*z0)/(n);  
 %Measure the infeasibilities
@@ -109,7 +110,7 @@ log_f     = zeros(pars.max_iter,1);
 log_step  = zeros(pars.max_iter,1);
 log_infeas= zeros(pars.max_iter,1);
 log_rel_infeas= zeros(pars.max_iter,1);
-
+log_obj       = zeros(pars.max_iter,1);
 
 %Iteration
 
@@ -131,7 +132,7 @@ fprintf('================================ XZ PROXPOT TOY =======================
 fprintf('  ITE LSTP F(X)/F0  f(x)/f(0) PHI     Mu       NPR      NDR      NGR      ALPH     MinX     MinZ     Infeas   R_Infeas\n');
 fprintf('----------------------------------------------------------------------------------------------------------------------\n');
 
-
+k       = 1; %Counter since momentum restart
 for itn = 1:pars.max_iter
 
    %Exit condition:
@@ -149,6 +150,8 @@ for itn = 1:pars.max_iter
     merit = rho*log(nP^2 + nD^2 + nG^2) - sum(log(x)) - sum(log(z)); %Value of phi
     res   = norm([p;d;g]); %Norm of the residual
     relres= res/res0;      %Relative residual
+    %calculate the objetive value
+    obj= x'*c;
     %Calculate the centrality 
     mu = x'*z/n;
     rel_infeas = max([nP/nP0,nD/nD0,nG/nG0]); %Relative infeasibility/ to the original
@@ -164,7 +167,7 @@ for itn = 1:pars.max_iter
     log_step(itn)      = t;
     log_infeas(itn)    = infeas;
     log_rel_infeas(itn)= rel_infeas;
-
+    log_obj(itn)       = o;
 
    if mod(itn,pars.itn_print) == 0 || itn ==1
             fprintf('%5.1i %3.1i %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e\n',...
@@ -209,6 +212,7 @@ for itn = 1:pars.max_iter
         p = A*x-b;
         d = A'*y+z-c;
         g = sqrt(x.*z);
+        o = x'*c;
 
         %Calculate the infeasibility 
         nP = norm(p);
@@ -255,7 +259,8 @@ for itn = 1:pars.max_iter
         p = A*x-b;
         d = A'*y+z-c;
         g = sqrt(x.*z);
-
+        o = x'*c;
+        
         %Calculate the infeasibility 
         nP = norm(p);
         nD = norm(d);
@@ -264,14 +269,24 @@ for itn = 1:pars.max_iter
         f  = nP^2+nD^2+nG^2;  
         
     end
-
+    
+    %-------------------------------------
+    %Fixed restarting 
+    %-------------------------------------
+    if isfield(pars,'restart') && mod(itn,pars.restart) == 0
+        xp = x;
+        yp = y;
+        zp = z;
+        k = 0;
+        'Restart'
+    end
 
    %Prepare the next loop
    if(isfield(pars,'t0m')) %Extend the initial step size a little
         t = t*pars.t0m;
    end
           
-
+k = k+1;
 end
 %remove the backslashes from the name
 %prob_name(find(prob_name=='/'))='_';

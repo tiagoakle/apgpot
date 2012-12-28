@@ -64,6 +64,7 @@ q        = pars.gamma * q;
 
 % printing:
 if pars.echo > 0
+    fprintf('Norm: %i\n',pars.tolnorm);
     fprintf('==================================== APGPOT =======================================\n');
     fprintf('  ITE LSTP F(X)/F0  PROG     PR0/R0   P-RES    D-RES    G-RES    STP      W-ratio \n');
     fprintf('-----------------------------------------------------------------------------------\n');
@@ -116,6 +117,7 @@ for j = 1:(pars.maxit+1)
         rD = rD/zx(pars.tauidx);
     end
 
+    %ratio to the initial residuals
     nrP = rP/rsP;
     nrD = rD/rsD;
     nrG = rG/rsG;
@@ -231,6 +233,8 @@ for j = 1:(pars.maxit+1)
                 proxd = (1/2)*tmp;    % 3-4 Newton steps to compute the 
                                       % sqrt is faster.
                 
+                %XXX: This means we can optimize by only calculating the prox
+                %over the set pars.pidx
 
                 % only apply barrier on pars.pidx first variables:
                 % (i.e. those that are required >= 0)
