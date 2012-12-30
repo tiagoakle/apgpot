@@ -1,17 +1,19 @@
-\documentclass[smallextended]{svjour3}       % onecolumn (second format)
+\documentclass[smallextended]{article}       % onecolumn (second format)
+%\documentclass[smallextended]{svjour3}       % onecolumn (second format)
 
-\smartqed  % flush right qed marks, e.g. at end of proof
+%\smartqed  % flush right qed marks, e.g. at end of proof
 
 \usepackage{graphicx,bbm,algorithmic,algorithm} 
 \usepackage{amsmath,amstext,amssymb,amsfonts,amscd}
 
-\spnewtheorem{defn}{Definition}{\bf}{\rm} 
+%\spnewtheorem{defn}{Definition}{\bf}{\rm} 
 \newcounter{rulenum} 
 \newcounter{sent} 
 \newcounter{tempcnt} 
 
 \include{macros}
-\title{Notes on Accelerated Proximal Gradient Algorithms for Potential-reduction}
+\title{Notes on Accelerated Proximal Gradient Algorithms for Potential-reduction, form the
+work of Yinyu Ye and Anders Skajaa}
 %\title{Notes on Accelerated Proximal Gradient Algorithms for Potential-reduction}
 \author{
    %Anders Skajaa
@@ -138,13 +140,14 @@ the sequence of step sizes $\left\{ r_k = t_k \frac{\rho}{f(x_k)}\right\}$ will 
 
  Let me venture an interpretation of the proximal gradient potential reduction algorithm:
  If we denote by $\mu = \frac{f(x)}{\rho}$ then $\mu h(x)$ is amenable to a barrier function. 
- The steps $\hat x = x - r_k\nabla f$ are descent steps on the objective and $\xp = \prx_{\mu h}{\hat x}$ act
+ The steps $\hat x = x - r_k\nabla f$ are descent steps on the objective and $\xp = \prx_{r_k \mu h}{\hat x}$ act
  like centering steps.
 
 
- \section{Strategies for proofs}
- However, the important observation is that if $\mu$ is {\em fixed} then the
- objective is convex, and the algorithm becomes simply the proximal potential
+ \section{Strategy for proofs}
+ Notwithstanding an interpretation for the proximal potential algorithm,
+ the important observation is that if $\mu$ is {\em fixed} then the
+ objective is convex, and the algorithm becomes simply the {\em proximal gradient}
  algorithm! Imagine we pick $\mu$ like $\frac{f^*+\epsilon}{\rho}$.  Then this
  algorithm achieves the $\frac{1}{k}$ convergence and the accelerated version
  achieves the $\frac{1}{k^2}$ rate !
@@ -153,9 +156,8 @@ the sequence of step sizes $\left\{ r_k = t_k \frac{\rho}{f(x_k)}\right\}$ will 
  regular proof due to P.Tseng to show that if we fix $\mu$ then the methods
  converge like $\frac{1}{k}$ or $\frac{1}{k^2}$.  Then we have to show that the
  methods that change $\mu$ at every iterate do at least as well as those that
- dont and we will be done.
+ don't.
 
- \section{Numerical experiments}
  \subsection{Solving Linear Programs}
  To use the potential reduction model for solving Linear Programs, 
  we have several choices of objective function.
@@ -172,11 +174,9 @@ the sequence of step sizes $\left\{ r_k = t_k \frac{\rho}{f(x_k)}\right\}$ will 
  f_3(x,\tau,y,z,\kappa) = \n{Ax-\tau b}^2 + \n{A^Ty+z-\tau c}^2 + (c^Tx-b^Ty+\kappa)^2.
  \]
 
- The present algorithm does not yet work for the homogeneous self dual version $f_3$, this 
- has to be explored further.
-
  Some initial experiments with $f_1$, and $f_2$ suggest that they behave slightly differently.
-  The following are set of experiments solving the subset of the \netlib problems which 
-  are identified as problems in standard form.
+ 
+ 
+
 
 \end{document}

@@ -8,7 +8,8 @@ clc;
 
 %Load the indices of the standard form 
 %problems in lpnetlib
-results = {{'Problem Name','Objective function','m','n','Iterations','Primal Res Norm','Dual Res Norm','Gap','Centrality','exit flag'}};
+resultsf1 = {{'Problem Name','Objective function','m','n','Iterations','Primal Res Norm','Dual Res Norm','Gap','Centrality','exit flag'}};
+resultsf2 = {{'Problem Name','Objective function','m','n','Iterations','Primal Res Norm','Dual Res Norm','Gap','Centrality','exit flag'}};
 load 'standard_form_indices';
 problem_count = length(st_ix);
 for problem_index = 1:problem_count
@@ -33,7 +34,7 @@ for problem_index = 1:problem_count
   pars.max_iter = min(m*n,30000);
   pars.tolnorm = 2;
   pars.itn_print = 30000;
-
+  
   %Run prox_pot_toy to compare
   prox_pot_toy
   log_cell = {log_mu,...
@@ -43,9 +44,10 @@ for problem_index = 1:problem_count
               log_merit ,...
               log_f     ,...
               log_step  ,...
-              log_infeas};
+              log_infeas,...
+              log_obj};
   res_cell = {prob_name,'1',m,n,itn,nP,nD,nG,mu,Exit_flag,log_cell};
-  resultsf1{problem_index} = res_cell;
+  resultsf1{problem_index+1} = res_cell;
 
   prox_pot_toy_skew
   log_cell = {log_mu,...
@@ -55,8 +57,10 @@ for problem_index = 1:problem_count
               log_merit ,...
               log_f     ,...
               log_step  ,...
-              log_infeas};
+              log_infeas,...
+              log_obj};
   res_cell = {prob_name,'2',m,n,itn,nP,nD,nG,mu,Exit_flag,log_cell};
-  resultsf2{problem_index} = res_cell;
+  resultsf2{problem_index+1} = res_cell;
   save 
 end
+

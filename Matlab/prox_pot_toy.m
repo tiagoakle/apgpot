@@ -276,7 +276,7 @@ for itn = 1:pars.max_iter
     %-------------------------------------
     %Fixed restarting 
     %-------------------------------------
-    if isfield(pars,'restart') && mod(itn,pars.restart) == 0
+    if isfield(pars,'restart') && pars.restart == 1 && mod(itn,pars.restart) == 0
         xp = x;
         yp = y;
         zp = z;
