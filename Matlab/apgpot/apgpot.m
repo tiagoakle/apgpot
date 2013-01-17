@@ -45,6 +45,10 @@ NMtmul = 0;
 R.ef     = -9; %exit flag
 R.status = 'maxit';
 
+%XXX: Added by Santiago Jan 16 2013
+%Define a variable for the progress log
+R.log_f  = zeros(pars.maxit,1);
+
 % init:
 zy    = pars.zy0;
 zx    = zy;
@@ -276,8 +280,6 @@ for j = 1:(pars.maxit+1)
             else
                 t0 = t1;
             end
-
-
     end
 
     % apply acceleration only if pars.accel = 1
@@ -323,6 +325,11 @@ for j = 1:(pars.maxit+1)
         Mzy  = Mzx;
         resy = Mzy - q;
     end
+    
+    %XXX: Added by Santiago Jan 16 2013
+    %Save the value of  ||Mx-q||_2^2 in R.log_f
+    R.log_f(j) = norm(resx)^2;
+
 
 end
 

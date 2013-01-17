@@ -62,8 +62,8 @@ positive step size.
 
 We state the algoithm formally here.
 
-\begin{algorithm}{Potential Reduction Proximal Gradient}
-  \caption{Proximal Gradient}
+\begin{algorithm}
+  \caption{Potential Reduction Proximal Gradient}
   \begin{algorithmic}
   \STATE $k \gets 0, x \gets x_0, t_k \gets t_0$
 
@@ -109,8 +109,8 @@ Therefore we can re write the proximal algorithm in terms of steps allong the ve
 $\nabla f$ rather than $\nabla g$. 
 
 More formally: define the algorithm
-\begin{algorithm}{Proximal gradient}
-  \caption{Proximal Gradient}
+\begin{algorithm}
+  \caption{Alternative form of the Potential Reduction Proximal Gradient}
   \begin{algorithmic}
   \STATE $k \gets 0, x \gets x_0, r_k \gets t_0$
 
@@ -157,6 +157,23 @@ the sequence of step sizes $\left\{ r_k = t_k \frac{\rho}{f(x_k)}\right\}$ will 
  converge like $\frac{1}{k}$ or $\frac{1}{k^2}$.  Then we have to show that the
  methods that change $\mu$ at every iterate do at least as well as those that
  don't.
+
+ \subsection{Numerical Comparisson}
+ Lets compare the behavior of an accelerated proximal gradient algorithm against 
+ the accelerated proximal potential algorithm. If there is any hope for the 
+ accelerated proximal potential the simpler proximal gradient should be slower.
+    
+ To establish definitions the accelerated proximal gradient algorithm is given by:
+\begin{algorithm}
+  \caption{Proximal Gradient}
+  \begin{algorithmic}
+  \STATE $k \gets 0, x \gets x_0, r_k \gets t_0$
+  \WHILE{$f(x_k)- f^* > \epsilon$}
+  \STATE $x_{k+1} = \prx_{t_k I_{\Re^{+}}}{\left(x_k - t_k \nabla f(x_k)  \right)}$
+  \ENDWHILE
+  \end{algorithmic}
+  \label{alg:pg}
+\end{algorithm}
 
  \subsection{Solving Linear Programs}
  To use the potential reduction model for solving Linear Programs, 
