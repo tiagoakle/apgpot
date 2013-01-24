@@ -143,8 +143,96 @@ the sequence of step sizes $\left\{ r_k = t_k \frac{\rho}{f(x_k)}\right\}$ will 
  The steps $\hat x = x - r_k\nabla f$ are descent steps on the objective and $\xp = \prx_{r_k \mu h}{\hat x}$ act
  like centering steps.
 
+ \section{Solving Linear Programs}
 
- \section{Strategy for proofs}
+ To use the potential reduction model for solving Linear Programs, 
+ we have several choices of objective function:
+ \[
+ f_1(x,y,z) = \n{Ax-b}^2 + \n{A^Ty+z-c}^2 + (c^Tx-b^Ty)^2,
+ \]
+ let 
+  \[
+ f_2(x,y,z) = \n{Ax-b}^2 + \n{A^Ty+z-c}^2 + x^Tz,
+ \]
+ and let
+  \[
+ f_3(x,\tau,y,z,\kappa) = \n{Ax-\tau b}^2 + \n{A^Ty+z-\tau c}^2 + (c^Tx-b^Ty+\kappa)^2.
+ \]
+ 
+  When restricted to the positive orthant, these are clearly convex non-negative 
+  and if the linear problem is feasible, and bounded, they take the value 0 at the
+  solution of the linear program.
+
+ \subsection{The accelerated proximal potential algorithm}
+
+ For any of the $f_i$ above, if a triplet $(x^\star,y^\star,z^\star)$ is found such that $f(x^\star,y^\star,z^\star)=0$ and $0\leq x^\star,z^\star$,
+ then cleary it is a solution. Therefore we can re write it as the convex problem
+
+ \begin{align*}
+   \min f\\
+   \st 0\leq x,z
+ \end{align*}
+ 
+ Or using the notation $I_[x,z](x,z)$ for the indicator function of the positive orthant of the variables
+ $x$ and $z$, we can re write it as 
+
+ \begin{align*}
+   \min f + I
+ \end{align*}
+
+
+ An evident choice of algorithm for the above formulation would
+ be the accelerated proximal gradient. 
+
+ \begin{algorithm}
+  \caption{Proximal Gradient}
+  \begin{algorithmic}
+  \STATE $k \gets 0, x \gets x_0, r_k \gets t_0$
+  \WHILE{$f(x_k)- f^* > \epsilon$}
+  \STATE $x_{k+1} = \prx_{t_k I_{\Re^{+}}}{\left(x_k - t_k \nabla f(x_k)  \right)}$
+  \ENDWHILE
+  \end{algorithmic}
+  \label{alg:pg}
+\end{algorithm}
+
+To compare the behavior of an accelerated proximal gradient algorithm against 
+ the accelerated proximal potential algorithm, a small 
+ primal dual feasible random problem was generated. The choice $\rho = n+\sqrt n$ was 
+ used and both algorithms were initialized witht the same starting point and backtracking parameters.
+
+ \begin{figure}[h]
+   \begin{center}
+     \includegraphics[scale=0.5]{./Images/potvsprox.png}
+   \end{center}
+   \caption{Value of objective vs iteration for APP and APG}
+   \label{fig:APPvsAPG}
+ \end{figure}
+ Figure \eqref{fig:APPvsAPG} plots the values of $f_1$ across iteration count, it is 
+ not clear that the proximal potential algorithm produces a faster convergence rate
+ than the regular accelerated projected gradient.
+
+ \begin{figure}[h]
+   \begin{center}
+     \includegraphics[scale=0.5]{./Images/potvsrho.png}
+   \end{center}
+   \caption{Dependence on $\rho$}
+   \label{fig:APPvsRho}
+ \end{figure}
+
+ This could be dependent on the choice of $\rho$, but as figure \eqref{fig:APPvsRho} shows 
+ all choices of $\rho$ are slower than the indicator function projection.
+
+\begin{figure}[h]
+   \begin{center}
+     \includegraphics[scale=0.5]{./Images/potvsproxvsapgpot.png}
+   \end{center}
+   \caption{Comparisson to apgpot}
+   \label{fig:APPvsAPGPOT}
+ \end{figure}
+
+To rule out a bug in the implementation, I compare it to apgpot, figure \eqref{fig:APPvdAPGPOT}.
+\section{Strategy for proofs}
+
  Notwithstanding an interpretation for the proximal potential algorithm,
  the important observation is that if $\mu$ is {\em fixed} then the
  objective is convex, and the algorithm becomes simply the {\em proximal gradient}
@@ -156,44 +244,7 @@ the sequence of step sizes $\left\{ r_k = t_k \frac{\rho}{f(x_k)}\right\}$ will 
  regular proof due to P.Tseng to show that if we fix $\mu$ then the methods
  converge like $\frac{1}{k}$ or $\frac{1}{k^2}$.  Then we have to show that the
  methods that change $\mu$ at every iterate do at least as well as those that
- don't.
-
- \subsection{Numerical Comparisson}
- Lets compare the behavior of an accelerated proximal gradient algorithm against 
- the accelerated proximal potential algorithm. If there is any hope for the 
- accelerated proximal potential the simpler proximal gradient should be slower.
-    
- To establish definitions the accelerated proximal gradient algorithm is given by:
-\begin{algorithm}
-  \caption{Proximal Gradient}
-  \begin{algorithmic}
-  \STATE $k \gets 0, x \gets x_0, r_k \gets t_0$
-  \WHILE{$f(x_k)- f^* > \epsilon$}
-  \STATE $x_{k+1} = \prx_{t_k I_{\Re^{+}}}{\left(x_k - t_k \nabla f(x_k)  \right)}$
-  \ENDWHILE
-  \end{algorithmic}
-  \label{alg:pg}
-\end{algorithm}
-
- \subsection{Solving Linear Programs}
- To use the potential reduction model for solving Linear Programs, 
- we have several choices of objective function.
- Let 
- \[
- f_1(x,y,z) = \n{Ax-b}^2 + \n{A^Ty+z-c}^2 + (c^Tx-b^Ty)^2,
- \]
- let 
-  \[
- f_2(x,y,z) = \n{Ax-b}^2 + \n{A^Ty+z-c}^2 + x^Tz, 
- \]
- and let
-  \[
- f_3(x,\tau,y,z,\kappa) = \n{Ax-\tau b}^2 + \n{A^Ty+z-\tau c}^2 + (c^Tx-b^Ty+\kappa)^2.
- \]
-
- Some initial experiments with $f_1$, and $f_2$ suggest that they behave slightly differently.
- 
- 
+ don't. 
 
 
 \end{document}
