@@ -2,13 +2,8 @@
 %clc
 format compact
 
-%December 5 2012
-%Primal dual proximal gradient mapping potential reduction method
-%This code implements the experimental code from Zhuo, Skaja, Ye, Akle. 
-
-%Jan 16 2013
-%The code now has options to choose between the two objective functions f1,f2 and
-%to choose between projecting a la potential reduction or interpreting h as an indicator function
+%January 22 2013
+%Primal dual proximal gradient mapping potential reduction method for homogeneous self dual objective
 
 %It saves the generated gradients and all
 %iteration data.
@@ -23,8 +18,8 @@ if(~exist('A','var')||~exist('b','var')||~exist('c','var'))
     seed = 0;
     randn('seed',seed);
     rand('seed',seed);
-    m = 5;
-    n = 15;
+    m = 50;
+    n = 150;
     A = randn(m,n);
 
     x0    = rand(n,1);
@@ -61,6 +56,8 @@ fprintf('Loaded problem %s, m:%i, n:%i\n',P.name,m,n);
 x0 = ones(n,1);
 y0 = ones(m,1);
 z0 = ones(n,1);
+t0 = 1;
+k0 = 1;
 
 %---------------------------------------
 %Define the parameters
@@ -77,7 +74,7 @@ defaults = {...
     'max_bkt', 100;... %Backtracking iterations
     'beta_bkt',0.5;... %Backtracking constant
     't0',1;...         %Initial step size
-    't0m',1/0.9;...    %Extension to the step size
+    't0m',1/0.51;...    %Extension to the step size
     'func','gap';...   %Function to use to solve lp [gap,cent]
     'proj','pot';...   %Projection type [pot,ind]
     'restart',0;...    %Restart momentum every so many iterations 0 is no restart
@@ -111,7 +108,7 @@ results.log_rel_infeas= zeros(pars.max_iter,1);
 results.exit_flag = 'max_iter';
 
 if pars.rho == -1
-    rho = (n+sqrt(n)); %Feasibility weight in the potential function
+    rho = (n+1+sqrt(n+1)); %Feasibility weight in the potential function
 else
     rho = pars.rho;
 end
@@ -121,13 +118,18 @@ k    = 0; %Backtraking interation couter
 rescount       = 1; %Counter since last momentum restart
 
 %Calculate the initial residuals
-p  = A*x0-b;
-d  = A'*y0 + z0 - c;
-g  = c'*x0-b'*y0;
+p  = A*x0-t0*b;
+d  = A'*y0 + z0 - t0*c;
+g  = c'*x0-b'*y0-k0;
 o  = x0'*c;
-ce = (x0'*z0);
-mu = ce/n;  
+ce = (x0'*z0+t0*k0);
+mu = ce/(n+1);  
 
+%Pre calculate a few variables for the gradient calculation
+nbs= norm(b).^2;
+ncs= norm(c).^2;
+Ac = A*c;
+Atb= A'*b;
 
 %Measure the infeasibilities
 nP0 = norm(p);
@@ -143,8 +145,6 @@ res0   = norm([p;d;g]);
 %Calculate the initial value of f
 if strcmp(pars.func,'gap')
     f       = nP^2+nD^2+nG^2;   
-elseif strcmp(pars.func,'cent')
-    f       = nP^2+nD^2+ce;    
 end
 
 
@@ -152,14 +152,20 @@ end
 x = x0;
 y = y0;
 z = z0;
+t = t0;
+k = k0;
+
 xp= x;
 yp= y;
 zp= z;
+tp= t;
+kp= k;
 
 f0 = f;
       
 %First step size
-t  = pars.t0;
+s  = pars.t0;
+bk = 1;
 
 fprintf('Proximal potential reduction toy code\n')
 fprintf('LP objective function %s \n',pars.func);
@@ -167,9 +173,9 @@ fprintf('Projection into positive orthant %s \n',pars.proj)
 fprintf('Acceleration %i \n',pars.accel);
 fprintf('Rho: %d\n',pars.rho);
 
-fprintf('================================ PROXPOT TOY =========================================================================\n');
-fprintf('  ITE LSTP F(X)/F0  f(x)/f(0) PHI     Mu       NPR      NDR      NGR      ALPH     MinX     MinZ     Infeas   R_Infeas\n');
-fprintf('----------------------------------------------------------------------------------------------------------------------\n');
+fprintf('================================ PROXPOT TOY (Homogeneous)===========================================================================================\n');
+fprintf('  ITE LSTP F(X)/F0  f(x)/f(0) PHI     Mu       NPR      NDR      NGR      ALPH     MinX     MinZ     Infeas   R_Infeas   norm(x)    norm(z)    f/n(x)  tau  kappa \n');
+fprintf('-----------------------------------------------------------------------------------------------------------------------------------------------------\n');
 
 %-----------------------------------------------------
 % Start the iteration
@@ -190,9 +196,7 @@ for itn = 1:pars.max_iter
     
     relf  = f/f0; %Relative reduction in objective f
     if strcmp(pars.func,'gap') 
-        merit = rho*log(nP^2 + nD^2 + nG^2) - sum(log(x)) - sum(log(z)); %Value of phi
-    elseif strcmp(pars.func,'cent') 
-        merit = rho*log(nP^2 + nD^2 + ce) - sum(log(x)) - sum(log(z)); %Value of phi
+        merit = rho*log(nP^2 + nD^2 + nG^2) - sum(log(x)) - sum(log(z)) -log(t) -log(k); %Value of phi
     end
 
 
@@ -202,8 +206,8 @@ for itn = 1:pars.max_iter
     %calculate the objetive value
     obj   = x'*c;
     %Calculate the centrality 
-    ce    = z'*x;
-    mu    = ce/n;
+    ce    = z'*x+t*k;
+    mu    = ce/(n+1);
     %Calculate the relative infeasibility
     rel_infeas = max([nP/nP0,nD/nD0,nG/nG0]); %Relative infeasibility/ to the original
     infeas = max([nP,nD,nG]);
@@ -215,14 +219,14 @@ for itn = 1:pars.max_iter
     results.log_g_r(itn)       = nG;
     results.log_merit(itn)     = merit;
     results.log_f(itn)         = f;
-    results.log_step(itn)      = t;
+    results.log_step(itn)      = s;
     results.log_infeas(itn)    = infeas;
     results.log_rel_infeas(itn)= rel_infeas;
     results.log_obj(itn)       = o;
 
    if mod(itn,pars.itn_print) == 0 || itn ==1
-            fprintf('%5.1i %3.1i %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e\n',...
-                     itn,k,relres,relf,merit,mu,nP/nP0,nD/nD0,nG/nG0,t,min(x),min(z),infeas,rel_infeas); 
+            fprintf('%5.1i %3.1i %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e %8.1e\n',...
+                     itn,bk,relres,relf,merit,mu,nP/nP0,nD/nD0,nG/nG0,s,min(x),min(z),infeas,rel_infeas,norm(x),norm(z),f/norm(x),t,k); 
    end
 
    
@@ -230,9 +234,7 @@ for itn = 1:pars.max_iter
     %Form the gradient of f
     %----------------------
     if strcmp(pars.func,'gap')
-        grad = 2*[A'*p+g*c;A*d-g*b;d]; 
-    elseif strcmp(pars.func,'cent')
-        grad = 2*[A'*p;A*d;d] + [z;zeros(m,1);x];
+        grad = 2*[A'*p+g*c;t*(nbs+ncs)-Atb'*x-Ac'*y-c'*z;A*d-g*b;d;-g]; 
     end
 
     
@@ -240,39 +242,47 @@ for itn = 1:pars.max_iter
     xs = x;
     ys = y;
     zs = z;
-    
+    ts = t;
+    ks = k;
+
     %-----------------------------------
     %Backtracking linesearch
     %----------------------------------
 
-    for k = 1:pars.max_bkt
+    for bk = 1:pars.max_bkt
         %-------------------------------
         %Take the gradient step
         %-------------------------------
-        x  = xs - t*grad(1:n);
-        y  = ys - t*grad(n+1:n+m);
-        z  = zs - t*grad(n+m+1:2*n+m); 
+        x  = xs - s*grad(1:n);
+        t  = ts - s*grad(n+1);
+        y  = ys - s*grad(n+2:n+m+1);
+        z  = zs - s*grad(n+m+2:2*n+m+1);
+        k  = ks - s*grad(2*n+m+2); 
 
         %--------------------------------
         %Proximal projection step on the 
         % positively constrained variables
         %-------------------------------
         if(pars.proj == 'pot') %Potential reduction projection
-            eta = 4*t*f/rho;
-            x   = 0.5*(x+sqrt(x.^2+eta)); 
+            eta = 4*s*f/rho;
+            x   = 0.5*(x+sqrt(x.^2+eta));
+            t   = 0.5*(t+sqrt(t^2+eta));
             z   = 0.5*(z+sqrt(z.^2+eta));
+            k   = 0.5*(k+sqrt(k^2+eta));
         elseif(pars.proj == 'ind') %Positive orthant projection
             x   = max(x,0);
-            z   = max(z,0); 
+            t   = max(t,0);
+            z   = max(z,0);
+            k   = max(k,0); 
         end
                 
         %Calculate the residuals
-        p = A*x-b;
-        d = A'*y+z-c;
-        g = (c'*x-b'*y);
+        p = A*x-t*b;
+        d = A'*y+z-t*c;
+        g = (c'*x-b'*y-k);
         o = x'*c;
-        ce= x'*z;
-        mu= ce/n;
+        ce= x'*z+t*k;
+        mu= ce/(n+1);
 
         %Calculate the infeasibility 
         nP = norm(p);
@@ -280,23 +290,24 @@ for itn = 1:pars.max_iter
         nG = abs(g);
         
         %Calculate the proximal gradient
-        Gt  = 1/t*[xs-x;ys-y;zs-z];
+        Gt  = 1/s*[xs-x;ts-t;ys-y;zs-z;ks-k];
+        %gradxmy = 2*[A'*p+g*c;t*(nbs+ncs)-Atb'*x-Ac'*y-c'*z;A*d-g*b;d;-g]-grad; 
         Gtg = Gt'*grad; %local linear decrease
         nGt = norm(Gt)^2;
 
 
        if strcmp(pars.func,'gap')
             fn  = nP^2+nD^2+g^2;  
-       elseif strcmp(pars.func,'cent')
-            fn  = nP^2+nD^2+ce;  
        end
 
         
         %Evaluate the backtracking inequality 
-        if fn < f - t*Gtg + t*0.5*nGt
-             break;
+        %fprintf('%8.1e %8.1e %8.1e %8.1e %8.1e\n',fn,f,s*Gtg,s*0.5*nGt,f - s*Gtg + s*0.5*nGt);
+        if fn < f - s*Gtg + s*0.5*nGt
+        %if(abs(gradxmy'*tGt)<0.5*s*nGt)            
+            break;
         else %Backtracking step
-            t = t*pars.beta_bkt;
+            s = s*pars.beta_bkt;
         end
 
     end % end of linesearch
@@ -309,26 +320,33 @@ for itn = 1:pars.max_iter
     if pars.accel > 0  %Acceleration step
         theta   = (itn-1)/(itn+2); %Extrapolation coeficient
         ex_dirx = [x-xp];
+        ex_dirt = [t-tp];
         ex_diry = [y-yp];
         ex_dirz = [z-zp];
-       
+        ex_dirk = [k-kp];
+
         %Save x
         xp      = x;
+        tp      = t;
         zp      = z;
         yp      = y;
+        kp      = k;
         resp    = res;
         %Extrapolate
         x     = x + theta*ex_dirx;
+        t     = t + theta*ex_dirt;
         y     = y + theta*ex_diry;
-        z     = z + theta*ex_dirz; 
+        z     = z + theta*ex_dirz;
+        k     = k + theta*ex_dirk;
+
         %Update the residuals
         %XXX:The expensive way
-        p = A*x-b;
-        d = A'*y+z-c;
-        g = (c'*x-b'*y);
+        p = A*x-t*b;
+        d = A'*y+z-t*c;
+        g = (c'*x-b'*y-k);
         o = x'*c;
-        ce= x'*z;
-        mu= ce/n;
+        ce= x'*z+t*k;
+        mu= ce/(n+1);
         %Calculate the infeasibility 
         nP = norm(p);
         nD = norm(d);
@@ -336,8 +354,6 @@ for itn = 1:pars.max_iter
            
         if strcmp(pars.func,'gap')
             f  = nP^2+nD^2+g^2;  
-        elseif strcmp(pars.func,'cent')
-            f  = nP^2+nD^2+ce;  
         end
 
     end
@@ -358,7 +374,7 @@ for itn = 1:pars.max_iter
 
    %Prepare the next loop
    if(isfield(pars,'t0m')) %Extend the initial step size a little
-        t = t*pars.t0m;
+        s = s*pars.t0m;
    end
           
 end
