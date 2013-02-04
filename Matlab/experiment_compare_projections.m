@@ -6,6 +6,8 @@ clear all;
 close all;
 clc;
 addpath ./apgpot
+addpath ./prox_pot_toy
+
 %Generate a random problem
 prob_name = 'Random';
 seed = 0;
@@ -64,6 +66,20 @@ pars.tol   = 1.e-6;
 %Save the results
 f_apg = R.log_f(1:R.iter);
 
+%------------------------------------------------------
+%Run TFOCS to compare
+%------------------------------------------------------
+clear opts
+opts = struct;
+opts.alg = 'AT';
+opts.maxIts = 20000;
+
+E = [A      ,zeros(m,m),zeros(m,n) ;...
+    zeros(n),A'        ,eye(n)     ;...
+    c'      ,-b'       ,zeros(1,n)];
+q = [-b;-c;0];
+[sol,res] = tfocs(smooth_quad,{E,q},proj_restrictedRplus(n,m),ones(2*n+m,1),opts);
+
 
 %-------------------------------------------------------
 %Plot the results
@@ -84,6 +100,7 @@ hold on
 plot(log10(f_pot),'r');
 plot(log10(f_ind),'b');
 plot(log10(f_apg),'g');
-legend('Potential projection','Indicator projection','APGPOT');
+plot(log10(res.f),'m');
+legend('Potential projection','Indicator projection','APGPOT','TFOCS');
 saveas(h,'../Writeup/Images/potvsproxvsapgpot.png');
 hold off

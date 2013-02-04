@@ -1,10 +1,11 @@
+%{
 \documentclass[smallextended]{article}       % onecolumn (second format)
 %\documentclass[smallextended]{svjour3}       % onecolumn (second format)
 
 %\smartqed  % flush right qed marks, e.g. at end of proof
 
 \usepackage{graphicx,bbm,algorithmic,algorithm} 
-\usepackage{amsmath,amstext,amssymb,amsfonts,amscd}
+\usepackage{amsmath,amstext,amssymb,amsfonts,amscd,comment}
 
 %\spnewtheorem{defn}{Definition}{\bf}{\rm} 
 \newcounter{rulenum} 
@@ -230,21 +231,181 @@ To compare the behavior of an accelerated proximal gradient algorithm against
    \label{fig:APPvsAPGPOT}
  \end{figure}
 
-To rule out a bug in the implementation, I compare it to apgpot, figure \eqref{fig:APPvdAPGPOT}.
-\section{Strategy for proofs}
+To rule out a bug in the implementation, I compare it to apgpot, figure \eqref{fig:APPvsAPGPOT}.
 
- Notwithstanding an interpretation for the proximal potential algorithm,
- the important observation is that if $\mu$ is {\em fixed} then the
- objective is convex, and the algorithm becomes simply the {\em proximal gradient}
- algorithm! Imagine we pick $\mu$ like $\frac{f^*+\epsilon}{\rho}$.  Then this
- algorithm achieves the $\frac{1}{k}$ convergence and the accelerated version
- achieves the $\frac{1}{k^2}$ rate !
+\section{Solving LPs with first order methods}
+To use the first order method machinery, we must translate linear programs into
+the $\psi = g+h$ form with $g,h$ convex with $\nabla g$ Lipschitz continuous.
 
- For both the accelerated and regular proximal gradient methods we can use the
- regular proof due to P.Tseng to show that if we fix $\mu$ then the methods
- converge like $\frac{1}{k}$ or $\frac{1}{k^2}$.  Then we have to show that the
- methods that change $\mu$ at every iterate do at least as well as those that
- don't. 
+For the following discussion consider the problem \eqref{eq:primal_standard} in standard form
+\begin{align}
+  \minimize{x}{c^Tx}\\
+  \st Ax=b,\\
+    0\leq x
+    \tag{P}
+  \label{eq:primal_standard}
+\end{align}
 
+\subsection{TFOCS default formulation}
+The default construction in TFOCS regularizes a problem in 
+standard form to create the problem
+\begin{align*}
+  \minimize{x}{c^Tx + \mu/2\n{x}^2_2},
+  \st Ax=b,\\
+      0\leq x,
+  \label{eq:primal_reg}
+  \tag{Pr}
+\end{align*}
+with dual
+\begin{align*}
+  \minimize{y,z}{\frac{1}{2\mu}\n{A^Ty+z-c}_2^2-b^Ty} \\
+  \st 0\leq z,
+  \label{eq:dual_reg}
+  \tag{Dr}
+\end{align*}
+which can be readily minimized using an accelerated projected gradient method.
+One can alternatively solve the problems
+\begin{align*}
+  \minimize{x}{\frac{1}{2\mu}\n{Ax-b}_2^2} + c^Tx\\
+  \st 0\leq x,
+  \label{eq:primal_reg_un}
+  \tag{Pru}
+\end{align*}
+or 
+\begin{align*}
+  \minimize{x,y,z}{\frac{1}{2\mu}\n{A^Ty+z-c}_2^2 + \frac{1}{2\mu}\n{Ax-b}_2^2 + c^Tx-b^Ty}\\
+  \st 0\leq x,z,
+  \label{eq:primal_dual_reg}
+  \tag{PDr}
+\end{align*}
+which can also be minimized using accelerated projected gradient.
+
+\subsection{Formulation by Lan Lu and Monteiro}
+Using the primal-dual formulation one can avoid regularization and solve problem \eqref{eq:primal_standard} exactly,
+while incurring a larger cost per iteration when comparing to \eqref{eq:primal_reg_un} or \eqref{eq:dual_reg}.
+\begin{align}
+  \minimize{x,y,z}{\n{Ax-b}_2^2+\n{A^Ty+z-c}_2^2+(c^Tx-b^Ty)^2}\\
+  \st 0\leq x,z.
+  \label{eq:primal_dual}
+  \tag{PD}
+\end{align}
+
+This is clearly the same as using accelerated proximal gradient with objective $f_1$.
+
+\subsection{Homogeneous self dual model and infeasibility detection}
+
+If one can solve the problem
+\begin{align}
+  \minimize{x,y,z}{\n{Ax-\tau b}_2^2+\n{A^Ty+z-\tau c}_2^2+(c^Tx-b^Ty+\kappa)^2}\\
+  \st 0\leq x,z,\tau,\kappa.
+  \label{eq:hsd}
+  \tag{HSD}
+\end{align}
+then one can use its structure to detect infeasibility. 
+
+The following two are a random example and an LPnetlib example. 
+The random example follows the sparsity pattern of the LPnetlib problem,
+it was generated with 
+$m=524,n=1028$, the non zero entries fo matrix $A$ have standard normal deviation. The
+feasible primal dual pairs were generated with $x,y$ normaly distributed
+and $z$ uniform in $(0,1]$.
+
+\begin{comment}
+%}
+The following are generated from the tfocs_homogeneous_test.m script
+%{
+\end{comment}
+
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.5]{./Images/hsd_llm_primal_dual_infeas.png}
+  \end{center}
+  \caption{HSD Primal and Dual infeasibility vs iteration}
+  \label{fig:hsd_pd_infeas}
+\end{figure}
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.5]{./Images/hsd_llm_tau_over_kappa.png}
+  \end{center}
+  \caption{HSD $\tau/\kappa$ vs iteration}
+  \label{fig:hsd_tau_kappa}
+\end{figure}
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.5]{./Images/hsd_llm_centrality.png}
+  \end{center}
+  \caption{Centrality measure $x'z+\kappa\tau$}
+  \label{fig:hsd_centrality}
+\end{figure}
+
+\subsection{Example from lpnetlib problem }
+
+\begin{comment}
+%}
+The following are generated by the 
+tfocs_homogeneous_compare_rand_lpnetlib.m scripts
+%{
+\end{comment}
+
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.5]{./Images/hsd_llm_primal_dual_infeas_lpnetlib.png}
+  \end{center}
+  \caption{HSD Primal and Dual infeasibility vs iteration}
+  \label{fig:hsd_pd_infeas_lpnetlib}
+\end{figure}
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.5]{./Images/hsd_llm_tau_over_kappa_lpnetlib.png}
+  \end{center}
+  \caption{HSD $\tau/\kappa$ vs iteration}
+  \label{fig:hsd_tau_kappa_lpnetlib}
+\end{figure}
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.5]{./Images/hsd_llm_centrality_lpnetlib.png}
+  \end{center}
+  \caption{Centrality measure $x^Tz+\kappa\tau$}
+  \label{fig:hsd_centrality_lpnetlib}
+\end{figure}
+
+
+
+\subsection{Non-convex potential gradient projection}
+An alternative approach is to split the function $\psi$ 
+by $g=\rho\log{f} - \frac{1}{2}\sum_{i\in I}\log{x}$ and
+$h = - \frac{1}{2}\sum_{i\in I}\log{x}$.
+
+Setting $f = \n{Ax-b}_2^2+\n{A^Ty+z-c}_2^2+(c^Tx-b^Ty)^2$, 
+if the algoritm is useful it will converge to a solution of the LP.
+
+\subsection{Comparing LLM Proximal Potential Projection and Potential Gradient}
+
+The following example shows the behavior of the LLM algorithm allong with 
+the proximal potential and the potential-gradient approaches.
+\begin{itemize}
+  \item $m=524$
+    \item $n=1028$
+      \item $2\%$ non zero entries 
+\end{itemize}
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.5]{./Images/llm_potgrad_proxpot.png}
+  \end{center}
+  \caption{Decay of llm potgrad and proxpot}
+  \label{fig:llm_potgrad_proxpot}
+\end{figure}
+
+\begin{comment}
+Generated by experiment compare_llm_proxpot_potgrad.m
+\end{comment}
 
 \end{document}
+%}
